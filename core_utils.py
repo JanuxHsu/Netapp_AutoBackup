@@ -1,4 +1,10 @@
+# ! /usr/bin/env python3
+"""
+Author: JanuxHsu
+"""
+
 import base64
+import json
 import logging
 
 import requests
@@ -23,7 +29,6 @@ class API_Handler(object):
         self.api_user = ""
         self.api_password = ""
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.generate_auth_header()
 
     def set_cluster(self, cluster=""):
         self.cluster = cluster
@@ -52,14 +57,74 @@ class API_Handler(object):
         self.auth_header = headers
         return headers
 
-    def check_snapmirror_by_id(self, uuid=""):
-        snap_api_url = "{}/api/snapmirror/relationships/{}".format(self._get_url(), uuid)
+    def list_volumes(self, fields=None, included_root_vols=False):
+        self.generate_auth_header()
 
-        response = requests.get(snap_api_url, headers=self.auth_header, verify=False)
+        queries = []
+        if not included_root_vols:
+            queries.append("is_svm_root=false")
+        if fields is not None:
+            queries.append("fields={}".format(",".join(fields)))
 
+        url = "{}/api/storage/volumes{}".format(self._get_url(), "?{}".format("&".join(queries)))
+        response = requests.get(url, headers=self.auth_header, verify=False)
         res_json = response.json()
 
-        if response.status_code != 200:
+        if not response.ok:
             raise Exception(res_json)
+        return res_json["records"]
 
+    def show_volume(self, uuid=None, fields=None):
+        self.generate_auth_header()
+
+        query = "" if fields is None else "?fields={}".format(",".join(fields))
+
+        url = "{}/api/storage/volumes/{}{}".format(self._get_url(), uuid, query)
+        response = requests.get(url, headers=self.auth_header, verify=False)
+        res_json = response.json()
+
+        if not response.ok:
+            raise Exception(res_json)
         return res_json
+
+    def create_snapshot(self, volume_uuid=None, snapshot_name=None):
+        self.generate_auth_header()
+
+        body = {"name": snapshot_name}
+
+        url = "{}/api/storage/volumes/{}/snapshots".format(self._get_url(), volume_uuid)
+        response = requests.post(url, headers=self.auth_header, data=json.dumps(body), verify=False)
+        res_json = response.json()
+
+        if not response.ok:
+            raise Exception(res_json)
+        return res_json
+
+    def show_snapshot(self, volume_uuid=None, snapshot_uuid=None):
+        self.generate_auth_header()
+        url = "{}/api/storage/volumes/{}/snapshots/{}".format(self._get_url(), volume_uuid, snapshot_uuid)
+        response = requests.get(url, headers=self.auth_header, verify=False)
+        res_json = response.json()
+
+        if not response.ok:
+            raise Exception(res_json)
+        return res_json
+
+    def list_snapshots(self, volume_uuid=None, target=None):
+        self.generate_auth_header()
+
+        query = "" if target is None else "?name={}".format(",".join(target))
+
+        url = "{}/api/storage/volumes/{}/snapshots{}".format(self._get_url(), volume_uuid, query)
+        response = requests.get(url, headers=self.auth_header, verify=False)
+        res_json = response.json()
+
+        if not response.ok:
+            raise Exception(res_json)
+        return res_json
+
+
+def read_json_from_file(file_path=None):
+    with open(file_path) as f:
+        config = json.load(f)
+        return config
