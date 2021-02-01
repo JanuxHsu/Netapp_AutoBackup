@@ -1,5 +1,8 @@
 # Netapp_AutoBackup
 
+!!! ### All **3** .py files must be copied ### !!!
+
+
 ### Before you start ###
 Create **secret.json** with following format:
 ```
