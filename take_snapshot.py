@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
         volume_uuid, volume_name = api_handler.get_volume_uuid_by_name(name=target_name)
 
-        snapshot_name = "snapshot.{}".format(datetime.utcnow().strftime("%Y%m%d_%H%M%S"))
+        snapshot_name = "snapshot.{}".format(datetime.now().strftime("%Y%m%d_%H%M%S"))
         main_logger.info("Create snapshot {} for {}.".format(snapshot_name, volume_name))
         snapshot_create_res = api_handler.create_snapshot(volume_uuid=volume_uuid, snapshot_name=snapshot_name)
 
