@@ -1,6 +1,6 @@
 # Netapp_AutoBackup
 
-!!! ### All **3** .py files must be copied ### !!!
+!!! ### All the .py files must be copied ### !!!
 
 
 ### Before you start ###
