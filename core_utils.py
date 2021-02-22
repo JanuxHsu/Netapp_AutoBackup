@@ -46,7 +46,8 @@ class API_Handler(object):
         return "https://{}:{}".format(self.cluster, self.port)
 
     def generate_auth_header(self):
-        base64string = base64.encodebytes(('%s:%s' % (self.api_user, self.api_password)).encode()).decode().replace('\n', '')
+        base64string = base64.encodebytes(('%s:%s' % (self.api_user, self.api_password)).encode()).decode().replace(
+            '\n', '')
 
         headers = {
             'authorization': "Basic %s" % base64string,
@@ -67,7 +68,7 @@ class API_Handler(object):
             queries.append("fields={}".format(",".join(fields)))
 
         url = "{}/api/storage/volumes{}".format(self._get_url(), "?{}".format("&".join(queries)))
-        response = requests.get(url, headers=self.auth_header, verify=False)
+        response = requests.get(url, headers=self.auth_header, verify=False, timeout=30)
         res_json = response.json()
 
         if not response.ok:
@@ -80,7 +81,7 @@ class API_Handler(object):
         query = "" if fields is None else "?fields={}".format(",".join(fields))
 
         url = "{}/api/storage/volumes/{}{}".format(self._get_url(), uuid, query)
-        response = requests.get(url, headers=self.auth_header, verify=False)
+        response = requests.get(url, headers=self.auth_header, verify=False, timeout=30)
         res_json = response.json()
 
         if not response.ok:
@@ -93,7 +94,7 @@ class API_Handler(object):
         body = {"name": snapshot_name}
 
         url = "{}/api/storage/volumes/{}/snapshots".format(self._get_url(), volume_uuid)
-        response = requests.post(url, headers=self.auth_header, data=json.dumps(body), verify=False)
+        response = requests.post(url, headers=self.auth_header, data=json.dumps(body), verify=False, timeout=30)
         res_json = response.json()
 
         if not response.ok:
@@ -103,7 +104,7 @@ class API_Handler(object):
     def show_snapshot(self, volume_uuid=None, snapshot_uuid=None):
         self.generate_auth_header()
         url = "{}/api/storage/volumes/{}/snapshots/{}".format(self._get_url(), volume_uuid, snapshot_uuid)
-        response = requests.get(url, headers=self.auth_header, verify=False)
+        response = requests.get(url, headers=self.auth_header, verify=False, timeout=30)
         res_json = response.json()
 
         if not response.ok:
@@ -116,9 +117,38 @@ class API_Handler(object):
         query = "" if target is None else "?name={}".format(",".join(target))
 
         url = "{}/api/storage/volumes/{}/snapshots{}".format(self._get_url(), volume_uuid, query)
-        response = requests.get(url, headers=self.auth_header, verify=False)
+        response = requests.get(url, headers=self.auth_header, verify=False, timeout=30)
         res_json = response.json()
 
+        if not response.ok:
+            raise Exception(res_json)
+        return res_json
+
+    def get_volume_uuid_by_name(self, name=""):
+        self.generate_auth_header()
+
+        url = "{}/api/storage/volumes?name={}".format(self._get_url(), name)
+        response = requests.get(url, headers=self.auth_header, verify=False, timeout=30)
+        res_json = response.json()
+
+        if not response.ok:
+            raise Exception(res_json)
+        elif res_json["num_records"] != 1:
+            raise Exception("Found no match volumes using [{}], please check input again.".format(name))
+
+        volume_info = res_json["records"][0]
+
+        return volume_info["uuid"], volume_info["name"]
+
+    def get_job_by_uuid(self, uuid=None):
+        if uuid is None:
+            raise Exception("uuid must be given,")
+
+        self.generate_auth_header()
+
+        url = "{}/api/cluster/jobs/{}".format(self._get_url(), uuid)
+        response = requests.get(url, headers=self.auth_header, verify=False, timeout=30)
+        res_json = response.json()
         if not response.ok:
             raise Exception(res_json)
         return res_json
@@ -128,3 +158,4 @@ def read_json_from_file(file_path=None):
     with open(file_path) as f:
         config = json.load(f)
         return config
+
