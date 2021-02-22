@@ -91,7 +91,7 @@ class API_Handler(object):
     def create_snapshot(self, volume_uuid=None, snapshot_name=None):
         self.generate_auth_header()
 
-        body = {"name": snapshot_name}
+        body = {"name": snapshot_name, "snapmirror-label": snapshot_name}
 
         url = "{}/api/storage/volumes/{}/snapshots".format(self._get_url(), volume_uuid)
         response = requests.post(url, headers=self.auth_header, data=json.dumps(body), verify=False, timeout=30)
@@ -158,4 +158,3 @@ def read_json_from_file(file_path=None):
     with open(file_path) as f:
         config = json.load(f)
         return config
-
